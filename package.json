@@ -1,0 +1,16 @@
+{
+  "name": "aircraft-type-map-card",
+  "version": "0.1.1",
+  "description": "Home Assistant Lovelace card: FlightRadar24 map with jet, turboprop, light-aircraft and helicopter icons",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "lint": "node --check dist/aircraft-type-map-card.js",
+    "test": "node --check dist/aircraft-type-map-card.js && node test/run.mjs"
+  },
+  "devDependencies": {
+    "leaflet": "1.9.4",
+    "playwright-core": "1.48.2"
+  }
+}

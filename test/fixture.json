@@ -1,0 +1,49 @@
+{
+  "_comment": "Synthetic test data around Sydney Airport (25 km radius). Shapes match the FlightRadar24 integration's flights attribute; registrations and positions are made up.",
+  "bounds": "-33.7215,-34.1707,150.9065,151.4479",
+  "home": [-33.9461, 151.1772],
+  "featured_id": "t-jet",
+  "flights": [
+    {
+      "id": "t-jet", "flight_number": "QF431", "callsign": "QFA431", "aircraft_registration": "VH-TJA",
+      "aircraft_model": "Boeing 737-838", "aircraft_code": "B738", "aircraft_category": "Airplane", "airline": "Qantas",
+      "airport_origin_code_iata": "SYD", "airport_origin_city": "Sydney", "airport_destination_code_iata": "MEL", "airport_destination_city": "Melbourne",
+      "latitude": -34.035, "longitude": 151.065, "altitude": 12500, "heading": 225, "ground_speed": 290, "distance": 14.1, "on_ground": 0,
+      "aircraft_photo_medium": "https://cdn.jetphotos.com/400/test.jpg",
+      "coordinates": [[-33.95, 151.18], [-33.97, 151.15], [-33.99, 151.12], [-34.01, 151.095], [-34.035, 151.065]]
+    },
+    {
+      "id": "t-tprop", "flight_number": "QF2112", "callsign": "QLK112D", "aircraft_registration": "VH-TQB",
+      "aircraft_model": "De Havilland Canada Dash 8-400", "aircraft_code": "DH8D", "aircraft_category": "Airplane", "airline": "QantasLink",
+      "airport_origin_code_iata": "WGA", "airport_origin_city": "Wagga Wagga", "airport_destination_code_iata": "SYD", "airport_destination_city": "Sydney",
+      "latitude": -33.86, "longitude": 150.99, "altitude": 4500, "heading": 120, "ground_speed": 210, "distance": 19.7, "on_ground": 0,
+      "coordinates": [[-33.78, 150.88], [-33.81, 150.92], [-33.835, 150.955], [-33.86, 150.99]]
+    },
+    {
+      "id": "t-light1", "callsign": "TLC", "aircraft_registration": "VH-TLC",
+      "aircraft_model": "Cessna 172S Skyhawk SP", "aircraft_code": "C172", "aircraft_category": "Airplane", "airline": "Example Flying School",
+      "airport_origin_code_iata": "BWU", "airport_origin_city": "Bankstown",
+      "latitude": -33.905, "longitude": 150.975, "altitude": 1500, "heading": 300, "ground_speed": 95, "distance": 19.2, "on_ground": 0,
+      "coordinates": [[-33.925, 151.01], [-33.915, 150.99], [-33.905, 150.975]]
+    },
+    {
+      "id": "t-light2", "callsign": "TPA", "aircraft_registration": "VH-TPA",
+      "aircraft_model": "Piper PA-28-181 Archer", "aircraft_code": "P28A", "aircraft_category": "Airplane", "airline": "Private owner",
+      "latitude": -34.105, "longitude": 151.30, "altitude": 2500, "heading": 60, "ground_speed": 100, "distance": 21.1, "on_ground": 0,
+      "coordinates": [[-34.14, 151.24], [-34.125, 151.27], [-34.105, 151.30]]
+    },
+    {
+      "id": "t-heli", "callsign": "THR", "aircraft_registration": "VH-THR",
+      "aircraft_model": "Robinson R44 Raven II", "aircraft_code": "R44", "aircraft_category": "Airplane", "airline": "Example Heli Tours",
+      "latitude": -33.855, "longitude": 151.235, "altitude": 1000, "heading": 30, "ground_speed": 80, "distance": 11.4, "on_ground": 0,
+      "coordinates": [[-33.88, 151.21], [-33.87, 151.22], [-33.855, 151.235]]
+    },
+    {
+      "id": "t-ground", "flight_number": "JQ501", "callsign": "JST501", "aircraft_registration": "VH-TVG",
+      "aircraft_model": "Airbus A320-232", "aircraft_code": "A320", "aircraft_category": "Airplane", "airline": "Jetstar",
+      "airport_origin_code_iata": "SYD", "airport_origin_city": "Sydney", "airport_destination_code_iata": "MEL", "airport_destination_city": "Melbourne",
+      "latitude": -33.938, "longitude": 151.168, "altitude": 0, "heading": 340, "ground_speed": 12, "distance": 1.2, "on_ground": 1,
+      "coordinates": []
+    }
+  ]
+}
