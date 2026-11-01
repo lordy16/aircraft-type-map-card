@@ -142,6 +142,60 @@ for (const theme of ['dark', 'light']) {
   await p2.close();
 }
 
+// 3b. Selection: select(), highlight_id, tap-to-select event, popups:false, refit on re-attach
+{
+  const page = await open('dark');
+  await mount(page, 'dark', { popups: false });
+  const featuredOf = () => page.evaluate(() => [...window.__card._planes.values()]
+    .filter((p) => p.marker.getElement()?.classList.contains('featured')).map((p) => p.f.id));
+  check(JSON.stringify(await featuredOf()) === JSON.stringify([fx.featured_id]), 'highlight_entity glows the featured aircraft');
+  await page.evaluate(() => window.__card.select('t-heli'));
+  await page.waitForTimeout(200);
+  check(JSON.stringify(await featuredOf()) === '["t-heli"]', 'select(id) moves the highlight');
+  await page.evaluate(() => window.__card.select(null));
+  await page.waitForTimeout(200);
+  check(JSON.stringify(await featuredOf()) === JSON.stringify([fx.featured_id]), 'select(null) falls back to highlight_entity');
+
+  await page.evaluate(() => {
+    window.__picked = null;
+    document.body.addEventListener('aircraft-selected', (e) => { window.__picked = e.detail.id; });
+  });
+  const pt = await page.evaluate(() => {
+    const p = [...window.__card._planes.values()].find((x) => x.f.id === 't-tprop');
+    const r = p.marker.getElement().getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  });
+  await page.mouse.click(pt.x, pt.y);
+  await page.waitForTimeout(300);
+  const after = await page.evaluate(() => ({
+    picked: window.__picked,
+    popup: !!window.__card.shadowRoot.querySelector('.leaflet-popup'),
+    userMoved: !!window.__card._userMoved,
+  }));
+  check(after.picked === 't-tprop', 'tapping an aircraft fires aircraft-selected with its id');
+  check(JSON.stringify(await featuredOf()) === '["t-tprop"]', 'tapping an aircraft highlights it');
+  check(!after.popup, 'popups:false opens no popup');
+  check(!after.userMoved, 'tapping an aircraft does not stop auto-fit');
+
+  const z0 = (await state(page)).zoom;
+  await page.evaluate(() => { window.__card._map.setZoom(window.__card._map.getZoom() + 2); window.__card._userMoved = true; });
+  await page.waitForTimeout(300);
+  await page.evaluate(() => { const c = window.__card, slot = c.parentNode; slot.removeChild(c); slot.appendChild(c); });
+  await page.waitForTimeout(600);
+  const s = await state(page);
+  check(s.zoom === z0 && !s.userMoved, 're-attaching the card forgets the pan and refits');
+  await page.evaluate(() => window.__card.setConfig({ ...window.__card._config, highlight_id: 't-light1', popups: true }));
+  await page.waitForTimeout(300);
+  await page.evaluate(() => window.__card.select(null));
+  await page.waitForTimeout(200);
+  check(JSON.stringify(await featuredOf()) === '["t-light1"]', 'highlight_id overrides highlight_entity');
+  await page.mouse.click(pt.x, pt.y);
+  await page.waitForTimeout(400);
+  check(await page.evaluate(() => !!window.__card.shadowRoot.querySelector('.leaflet-popup')), 'popups:true still opens the popup on tap');
+  check(page.errors.length === 0, `selection: no console errors ${page.errors.join('; ')}`);
+  await page.close();
+}
+
 // 4. Icon sheet for the README
 {
   const page = await open('dark', { width: 760, height: 330 });

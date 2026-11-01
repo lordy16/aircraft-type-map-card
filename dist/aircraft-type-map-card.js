@@ -17,11 +17,18 @@
  *   dead_reckoning: true   # glide aircraft along their heading between polls
  *   icon_scale: 1
  *   highlight_entity: sensor.featured_flight   # optional; glows the aircraft whose fr24_id matches
+ *   highlight_id: 4261ceed # optional; glows this FR24 id (overrides highlight_entity)
+ *   popups: true           # false: tapping an aircraft only selects it (no popup)
+ *
+ * Tapping an aircraft highlights it and fires an `aircraft-selected` event
+ * (detail: { id, flight }) that bubbles out of the card. A host card can also
+ * call card.select(id) to highlight one, or card.select(null) to go back to
+ * highlight_id / highlight_entity.
  *   colors: { jet: '#ffb300', turboprop: '#26c6da', light: '#66bb6a', helicopter: '#ec407a' }
  *   type_overrides: { C208: light, PC12: jet }  # ICAO type code -> class
  */
 
-const ATM_VERSION = '0.1.1';
+const ATM_VERSION = '0.2.0';
 const LEAFLET = {
   js: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',
   jsSri: 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=',
@@ -234,6 +241,32 @@ class AircraftTypeMapCard extends HTMLElement {
 
   connectedCallback() {
     if (this._map && !this._timer) this._startTimer();
+    // Shown again (e.g. a host re-attached the card): forget any earlier pan/zoom and refit.
+    if (this._map) {
+      this._userMoved = false;
+      requestAnimationFrame(() => { if (this._map && this.isConnected) { this._map.invalidateSize(); this._fit(); } });
+    }
+  }
+
+  /** Highlight the aircraft with this FR24 id; null goes back to highlight_id / highlight_entity. */
+  select(id) {
+    this._selId = id || null;
+    this._lastStamp = null;
+    this._update();
+  }
+
+  _onPlaneTap(id, p) {
+    // Leaflet only fires click when the pointer didn't drag, so a plain tap on an
+    // aircraft shouldn't count as the user moving the map.
+    this._userMoved = !!this._movedBefore;
+    this.select(id);
+    this.dispatchEvent(new CustomEvent('aircraft-selected', { detail: { id, flight: p.f }, bubbles: true, composed: true }));
+  }
+
+  _bindPopup(p) {
+    const want = this._config.popups !== false;
+    if (want && !p.marker.getPopup()) p.marker.bindPopup(() => this._popup(p), { maxWidth: 260, minWidth: 220, autoPanPadding: [20, 20] });
+    else if (!want && p.marker.getPopup()) p.marker.unbindPopup();
   }
 
   disconnectedCallback() {
@@ -291,7 +324,11 @@ class AircraftTypeMapCard extends HTMLElement {
     });
     this._legend = new Legend({ position: 'bottomleft' });
     // Once the person pans or zooms, stop auto-fitting until they press the fit button.
-    const touched = (e) => { if (!e.target?.closest?.('.atm-legend, .atm-fit')) this._userMoved = true; };
+    const touched = (e) => {
+      if (e.target?.closest?.('.atm-legend, .atm-fit')) return;
+      this._movedBefore = !!this._userMoved;
+      this._userMoved = true;
+    };
     ['pointerdown', 'wheel', 'dblclick'].forEach((ev) => this._mapEl.addEventListener(ev, touched, { passive: true }));
     this._ro = new ResizeObserver(() => {
       if (!this._map) return;
@@ -320,7 +357,7 @@ class AircraftTypeMapCard extends HTMLElement {
     this._tiles = defs.map(([url, nativeZoom], i) =>
       L.tileLayer(url, { maxZoom: 18, maxNativeZoom: nativeZoom, attribution: i === 0 ? attribution : '' }).addTo(this._map));
     if (this._config.show_legend) this._legend.addTo(this._map); else this._legend.remove();
-    for (const p of this._planes.values()) { p.iconKey = null; p.ttKey = null; }
+    for (const p of this._planes.values()) { p.iconKey = null; p.ttKey = null; this._bindPopup(p); }
     this._lastStamp = null;
     this._update();
   }
@@ -357,7 +394,10 @@ class AircraftTypeMapCard extends HTMLElement {
     if (this._theme() !== this._appliedTheme) { this._rebuild(); return; }
     const st = hass.states[this._config.entity];
     this._stateObj = st;
-    const hl = this._config.highlight_entity ? hass.states[this._config.highlight_entity]?.attributes?.fr24_id : null;
+    const flights = Array.isArray(st?.attributes?.flights) ? st.attributes.flights : [];
+    const picked = this._selId && flights.some((f) => f.id === this._selId) ? this._selId : null;
+    const hl = picked || this._config.highlight_id
+      || (this._config.highlight_entity ? hass.states[this._config.highlight_entity]?.attributes?.fr24_id : null) || null;
     const stamp = `${st?.last_updated}|${hl}|${[...this._hidden].join()}`;
     if (stamp === this._lastStamp) return;
     this._lastStamp = stamp;
@@ -374,7 +414,6 @@ class AircraftTypeMapCard extends HTMLElement {
     }
     if (!this._userMoved && (st?.attributes?.bounds ?? null) !== this._fitKey) this._fit();
 
-    const flights = Array.isArray(st?.attributes?.flights) ? st.attributes.flights : [];
     const counts = { jet: 0, turboprop: 0, light: 0, helicopter: 0 };
     const seen = new Set();
     const now = Date.now();
@@ -387,7 +426,8 @@ class AircraftTypeMapCard extends HTMLElement {
       let p = this._planes.get(id);
       if (!p) {
         p = { marker: L.marker([f.latitude, f.longitude], { keyboard: false }), track: L.polyline([], { weight: 2, opacity: 0.55, interactive: false }) };
-        p.marker.bindPopup(() => this._popup(p), { maxWidth: 260, minWidth: 220, autoPanPadding: [20, 20] });
+        p.marker.on('click', () => this._onPlaneTap(id, p));
+        this._bindPopup(p);
         this._planes.set(id, p);
       }
       if (!p.f || p.f.latitude !== f.latitude || p.f.longitude !== f.longitude) p.fixAt = now;

@@ -15,7 +15,8 @@ and draws each one by type: **jet**, **turboprop**, **light aircraft** or **heli
 - Flight trails in the type colour
 - Legend with a live count per type; tap a type to hide or show it
 - Tap an aircraft for its photo, operator, model, registration, route, altitude, speed and a link to Flightradar24
-- Optional highlight for one aircraft, driven by any entity with an `fr24_id` attribute
+- Optional highlight for one aircraft, driven by any entity with an `fr24_id` attribute, a fixed id, or a tap
+- Tapping an aircraft fires an `aircraft-selected` event, so a dashboard or host card can follow the selection
 - Aircraft glide along their heading between integration polls instead of jumping
 - Dashed circle for the integration's tracking radius; the map fits it automatically until you pan or zoom
 - Follows Home Assistant's light and dark mode, or pick a fixed style
@@ -69,6 +70,8 @@ entity: sensor.flightradar24_current_in_area
 | `dead_reckoning` | `true` | Move aircraft along their heading between sensor updates |
 | `icon_scale` | `1` | Multiplies every icon size |
 | `highlight_entity` | none | Entity whose `fr24_id` attribute names an aircraft to highlight |
+| `highlight_id` | none | FR24 id of an aircraft to highlight; takes priority over `highlight_entity` |
+| `popups` | `true` | Open the details popup when an aircraft is tapped; `false` only selects it |
 | `colors` | see below | Override any type colour, e.g. `{ jet: '#ff9800' }` |
 | `type_overrides` | none | Force a class for an ICAO type code, e.g. `{ C208: light }` |
 
@@ -103,10 +106,25 @@ the ICAO type code (`aircraft_code`) and the model name instead, in this order:
 If something shows up as the wrong type, add its code to `type_overrides`, or open an issue with the code and model
 so the built-in lists can be fixed.
 
+## Selecting aircraft from another card
+
+Tapping an aircraft highlights it and fires an `aircraft-selected` event that bubbles out of the card, with
+`event.detail = { id, flight }` (`flight` is the integration's record for that aircraft). A card that hosts this one can
+also drive the highlight:
+
+```js
+map.select('4261ceed'); // highlight this FR24 id
+map.select(null);       // back to highlight_id / highlight_entity
+```
+
+A selection that leaves the tracking area falls back to `highlight_id` / `highlight_entity` on its own. Set
+`popups: false` when the host shows the details itself.
+
 ## Notes
 
 - **Auto-fit**: the map fits the tracking area when it loads, when the card resizes and when the integration's radius
-  changes. Once you pan or zoom, it stays where you left it until you press the ⤢ button.
+  changes. Once you pan or zoom, it stays where you left it until you press the ⤢ button, or until the card is shown again
+  after being removed from the page (for example a pop-up or full-screen view closing and reopening).
 - **Reverse proxies**: if a proxy in front of Home Assistant adds a Content-Security-Policy header, allow
   `cdn.jsdelivr.net` for scripts and styles and the tile hosts for images, or the map will not load.
 - Map tiles are © Esri or © OpenStreetMap contributors, as credited on the map.
@@ -120,7 +138,7 @@ npm test
 ```
 
 The test run renders the card in headless Chromium against `test/fixture.json` with all network access stubbed out.
-It checks classification, the popup, legend toggles and auto-fit behaviour, and writes screenshots to `test/out/`.
+It checks classification, the popup, legend toggles, auto-fit and selection behaviour, and writes screenshots to `test/out/`.
 
 ## Credits
 
